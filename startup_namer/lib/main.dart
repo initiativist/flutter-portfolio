@@ -15,10 +15,10 @@ class MyApp extends StatelessWidget {
       title: 'Startup Name Generator',
       theme: ThemeData(
           appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      ),
-      textTheme: TextTheme(titleLarge: GoogleFonts.alice())),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          textTheme: TextTheme(titleLarge: GoogleFonts.alice())),
       home: const RandomWords(),
     );
   }
