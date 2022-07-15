@@ -1,7 +1,6 @@
 import 'dart:convert';
-
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Notion {
@@ -35,11 +34,13 @@ void main() async {
 
   var data = {};
 
-  var response =
-      await http.post(url, headers: headers, body: json.encode(data));
-
-  var page_list =
-      json.decode(response.body)['results'].map((page) => page['id']).toList();
+  var page_list = (await Dio().post(
+          'https://api.notion.com/v1/databases/$db_id/query',
+          options: Options(headers: headers),
+          data: data))
+      .data['results']
+      .map((page) => page['id'])
+      .toList();
 
   print(page_list);
 }
