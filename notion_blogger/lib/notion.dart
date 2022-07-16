@@ -20,47 +20,32 @@ class Notion {
 }
 
 void main() async {
+  var dio = Dio();
   await dotenv.load(fileName: '.env');
-  var auth_token = dotenv.get('notion_token');
-  var db_id = dotenv.get('notion_db_id');
-
-  var url = Uri.https('api.notion.com', '/v1/databases/$db_id/query');
+  var authToken = dotenv.get('NOTION_TOKEN');
+  var dbId = dotenv.get('NOTION_DB_ID');
 
   var headers = {
-    'Authorization': 'Bearer $auth_token',
+    'Authorization': 'Bearer $authToken',
     'Notion-Version': '2022-06-28',
     'Content-Type': 'application/json'
   };
 
   var data = {};
 
-  var page_list = (await Dio().post(
-          'https://api.notion.com/v1/databases/$db_id/query',
-          options: Options(headers: headers),
-          data: data))
-      .data['results']
-      .map((page) => page['id'])
-      .toList();
+  var dbPages = (await dio.post(
+      'https://api.notion.com/v1/databases/$dbId/query',
+      options: Options(headers: headers),
+      data: data));
+  var pageIds = dbPages.data['results'].map((page) => page['id']).toList();
 
-  print(page_list);
+  var page = (await dio.get('https://api.notion.com/v1/pages/${pageIds[0]}',
+      options: Options(headers: headers)));
+
+  var pageContent = (await dio.get(
+      'https://api.notion.com/v1/blocks/${pageIds[0]}/children?page_size=100',
+      options: Options(headers: headers)));
+  print(pageContent);
 }
 
 void getPageList() async {}
-
-void templateRequest({required String url}) async {
-  await dotenv.load(fileName: '.env');
-  var auth_token = dotenv.get('notion_token');
-  var db_id = dotenv.get('notion_db_id');
-
-  var url = Uri.https('api.notion.com', '/v1/pages');
-
-  var headers = {
-    'Authorization': 'Bearer $auth_token',
-    'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json'
-  };
-
-  var data = {};
-
-  var response = await http.post(url, headers: headers, body: jsonEncode(data));
-}
