@@ -1,51 +1,82 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/*
+* TODO: add sorting for the pages by date.
+*/
+
+class ShallowNotionPage {
+  String title;
+  String id;
+
+  ShallowNotionPage(this.id, this.title);
+}
+
 class Notion {
   static const notionApiVersion = '2022-06-28';
-  static const headers = {};
-  // this is the same all the time so...
-  // it just needs to be loaded in the init function from the .env file
-  Notion();
+  static const notionURL = 'https://api.notion.com/v1';
 
-  void post() async {
-    var response = await http.post(
-        Uri.parse('https://ptsv2.com/t/41qj0-1657818975'),
-        body: {'name': 'doodle', 'color': 'blue'});
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+  bool initialized = false;
+
+  var headers = {
+    'Authorization': 'Bearer ',
+    'Notion-Version': notionApiVersion,
+    'Content-Type': 'application/json'
+  };
+
+  late Dio dio;
+  late String authToken;
+  late String dbId;
+
+  late List<ShallowNotionPage> pageMap;
+
+  Future<bool> init() async {
+    dio = Dio();
+    try {
+      await dotenv.load(fileName: '.env');
+      authToken = dotenv.get('NOTION_TOKEN');
+      dbId = dotenv.get('NOTION_DB_ID');
+      headers['Authorization'] = headers['Authorization']! + authToken;
+    } catch (error) {
+      initialized = false;
+    }
+    initialized = true;
+    return initialized;
+  }
+
+  Future<List<dynamic>> _getAllPageIds() async {
+    if (!initialized) throw Error();
+
+    return (await dio.post('$notionURL/databases/$dbId/query',
+            options: Options(headers: headers), data: {}))
+        .data['results']
+        .map((page) => page['id'])
+        .toList();
+  }
+
+  Future<String> _getPageTitle(id) async {
+    if (!initialized) throw Error();
+
+    return (await dio.get('$notionURL/pages/$id/properties/title',
+            options: Options(headers: headers)))
+        .data['results'][0]['title']['text']['content'];
+  }
+
+  getAllPageTitles() async {
+    if (!initialized) throw Error();
+
+    var ids = await _getAllPageIds();
+    List<ShallowNotionPage> pageMap = [];
+    for (var id in ids) {
+      pageMap.add(ShallowNotionPage(id, await _getPageTitle(id)));
+    }
+    this.pageMap = pageMap;
   }
 }
 
 void main() async {
-  var dio = Dio();
-  await dotenv.load(fileName: '.env');
-  var authToken = dotenv.get('NOTION_TOKEN');
-  var dbId = dotenv.get('NOTION_DB_ID');
-
-  var headers = {
-    'Authorization': 'Bearer $authToken',
-    'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json'
-  };
-
-  var data = {};
-
-  var dbPages = (await dio.post(
-      'https://api.notion.com/v1/databases/$dbId/query',
-      options: Options(headers: headers),
-      data: data));
-  var pageIds = dbPages.data['results'].map((page) => page['id']).toList();
-
-  var page = (await dio.get('https://api.notion.com/v1/pages/${pageIds[0]}',
-      options: Options(headers: headers)));
-
-  var pageContent = (await dio.get(
-      'https://api.notion.com/v1/blocks/${pageIds[0]}/children?page_size=100',
-      options: Options(headers: headers)));
-  print(pageContent);
+  var myNotion = Notion();
+  await myNotion.init();
+  await myNotion.getAllPageTitles();
+  print(myNotion.pageMap.map((e) => {'title': e.title, 'id': e.id}));
 }
-
-void getPageList() async {}
