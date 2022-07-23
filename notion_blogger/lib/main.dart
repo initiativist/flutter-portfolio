@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:english_words/english_words.dart';
 import 'notion.dart';
 
 void main() {
@@ -43,8 +42,6 @@ class _BlogListState extends State<BlogList> {
     await myNotion.loadShallowPages();
     setState(() {});
   }
-
-  final List<WordPair> _postList = generateWordPairs().take(40).toList();
 
   @override
   Widget build(BuildContext context) {
