@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'notion.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,14 +29,39 @@ class BlogList extends StatefulWidget {
 }
 
 class _BlogListState extends State<BlogList> {
+  late Notion myNotion;
+
+  @override
+  void initState() {
+    _initNotion();
+    super.initState();
+  }
+
+  void _initNotion() async {
+    myNotion = Notion();
+    await myNotion.init();
+    await myNotion.loadShallowPages();
+    setState(() {});
+  }
+
   final List<WordPair> _postList = generateWordPairs().take(40).toList();
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: _postList.length,
-      itemBuilder: (context, index) {
-        return ListTile(title: Text(_postList[index].asCamelCase));
+    return Builder(
+      builder: (context) {
+        if (myNotion.shallowPages.isNotEmpty) {
+          return ListView.builder(
+              itemCount: myNotion.shallowPages.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                    title: Text(myNotion.shallowPages[index].title));
+              });
+        } else {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
       },
     );
   }
