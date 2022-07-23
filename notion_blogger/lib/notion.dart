@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class ShallowNotionPage {
+class NotionShallowPage {
   String title;
   String id;
 
-  ShallowNotionPage(this.id, this.title);
+  NotionShallowPage(this.id, this.title);
 }
 
 class Notion {
@@ -24,7 +24,7 @@ class Notion {
   late String _authToken;
   late String _dbId;
 
-  List<ShallowNotionPage> shallowPages = [];
+  List<NotionShallowPage> shallowPages = [];
 
   Future<bool> init() async {
     _dio = Dio();
@@ -68,9 +68,9 @@ class Notion {
     if (!_initialized) throw Error();
 
     var ids = await _getAllPageIds();
-    List<ShallowNotionPage> shallowPages = [];
+    List<NotionShallowPage> shallowPages = [];
     for (var id in ids) {
-      shallowPages.add(ShallowNotionPage(id, await _getPageTitle(id)));
+      shallowPages.add(NotionShallowPage(id, await _getPageTitle(id)));
     }
     this.shallowPages = shallowPages;
   }

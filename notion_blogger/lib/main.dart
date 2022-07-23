@@ -29,6 +29,7 @@ class BlogList extends StatefulWidget {
 
 class _BlogListState extends State<BlogList> {
   late Notion myNotion;
+  late List<NotionShallowPage> pages = [];
 
   @override
   void initState() {
@@ -40,20 +41,21 @@ class _BlogListState extends State<BlogList> {
     myNotion = Notion();
     await myNotion.init();
     await myNotion.loadShallowPages();
-    setState(() {});
+    setState(() {
+      pages = myNotion.shallowPages;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
-        if (myNotion.shallowPages.isNotEmpty) {
-          return ListView.builder(
-              itemCount: myNotion.shallowPages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                    title: Text(myNotion.shallowPages[index].title));
-              });
+        if (pages.isNotEmpty) {
+          return ListView.separated(
+            itemCount: pages.length,
+            itemBuilder: (context, i) => ListTile(title: Text(pages[i].title)),
+            separatorBuilder: (context, i) => const Divider(),
+          );
         } else {
           return const Center(
             child: CircularProgressIndicator(),
