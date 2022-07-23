@@ -1,10 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/*
-* TODO: add sorting for the pages by date.
-*/
-
 class ShallowNotionPage {
   String title;
   String id;
@@ -28,7 +24,7 @@ class Notion {
   late String authToken;
   late String dbId;
 
-  late List<ShallowNotionPage> pageMap;
+  late List<ShallowNotionPage> shallowPages;
 
   Future<bool> init() async {
     dio = Dio();
@@ -47,11 +43,17 @@ class Notion {
   Future<List<dynamic>> _getAllPageIds() async {
     if (!initialized) throw Error();
 
-    return (await dio.post('$notionURL/databases/$dbId/query',
-            options: Options(headers: headers), data: {}))
-        .data['results']
-        .map((page) => page['id'])
-        .toList();
+    var dbPages = (await dio.post('$notionURL/databases/$dbId/query',
+            options: Options(headers: headers),
+            data: {
+          'sorts': [
+            {'timestamp': 'created_time', 'direction': 'descending'}
+          ]
+        }))
+        .data['results'];
+
+    var pageIds = dbPages.map((page) => page['id']).toList();
+    return pageIds;
   }
 
   Future<String> _getPageTitle(id) async {
@@ -62,21 +64,14 @@ class Notion {
         .data['results'][0]['title']['text']['content'];
   }
 
-  getAllPageTitles() async {
+  loadShallowPages() async {
     if (!initialized) throw Error();
 
     var ids = await _getAllPageIds();
-    List<ShallowNotionPage> pageMap = [];
+    List<ShallowNotionPage> shallowPages = [];
     for (var id in ids) {
-      pageMap.add(ShallowNotionPage(id, await _getPageTitle(id)));
+      shallowPages.add(ShallowNotionPage(id, await _getPageTitle(id)));
     }
-    this.pageMap = pageMap;
+    this.shallowPages = shallowPages;
   }
-}
-
-void main() async {
-  var myNotion = Notion();
-  await myNotion.init();
-  await myNotion.getAllPageTitles();
-  print(myNotion.pageMap.map((e) => {'title': e.title, 'id': e.id}));
 }
