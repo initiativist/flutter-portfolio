@@ -9,42 +9,42 @@ class ShallowNotionPage {
 }
 
 class Notion {
-  static const notionApiVersion = '2022-06-28';
-  static const notionURL = 'https://api.notion.com/v1';
+  static const _notionApiVersion = '2022-06-28';
+  static const _notionURL = 'https://api.notion.com/v1';
 
-  bool initialized = false;
+  bool _initialized = false;
 
-  var headers = {
+  final _headers = {
     'Authorization': 'Bearer ',
-    'Notion-Version': notionApiVersion,
+    'Notion-Version': _notionApiVersion,
     'Content-Type': 'application/json'
   };
 
-  late Dio dio;
-  late String authToken;
-  late String dbId;
+  late Dio _dio;
+  late String _authToken;
+  late String _dbId;
 
-  late List<ShallowNotionPage> shallowPages;
+  List<ShallowNotionPage> shallowPages = [];
 
   Future<bool> init() async {
-    dio = Dio();
+    _dio = Dio();
     try {
       await dotenv.load(fileName: '.env');
-      authToken = dotenv.get('NOTION_TOKEN');
-      dbId = dotenv.get('NOTION_DB_ID');
-      headers['Authorization'] = headers['Authorization']! + authToken;
+      _authToken = dotenv.get('NOTION_TOKEN');
+      _dbId = dotenv.get('NOTION_DB_ID');
+      _headers['Authorization'] = _headers['Authorization']! + _authToken;
     } catch (error) {
-      initialized = false;
+      _initialized = false;
     }
-    initialized = true;
-    return initialized;
+    _initialized = true;
+    return _initialized;
   }
 
   Future<List<dynamic>> _getAllPageIds() async {
-    if (!initialized) throw Error();
+    if (!_initialized) throw Error();
 
-    var dbPages = (await dio.post('$notionURL/databases/$dbId/query',
-            options: Options(headers: headers),
+    var dbPages = (await _dio.post('$_notionURL/databases/$_dbId/query',
+            options: Options(headers: _headers),
             data: {
           'sorts': [
             {'timestamp': 'created_time', 'direction': 'descending'}
@@ -57,15 +57,15 @@ class Notion {
   }
 
   Future<String> _getPageTitle(id) async {
-    if (!initialized) throw Error();
+    if (!_initialized) throw Error();
 
-    return (await dio.get('$notionURL/pages/$id/properties/title',
-            options: Options(headers: headers)))
+    return (await _dio.get('$_notionURL/pages/$id/properties/title',
+            options: Options(headers: _headers)))
         .data['results'][0]['title']['text']['content'];
   }
 
   loadShallowPages() async {
-    if (!initialized) throw Error();
+    if (!_initialized) throw Error();
 
     var ids = await _getAllPageIds();
     List<ShallowNotionPage> shallowPages = [];
