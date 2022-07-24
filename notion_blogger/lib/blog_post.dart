@@ -34,25 +34,19 @@ class PostBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Map blockStyle = {
+      BlockType.headingOne: Theme.of(context).textTheme.headline4,
+      BlockType.headingTwo: Theme.of(context).textTheme.headline5,
+      BlockType.headingThree: Theme.of(context).textTheme.headline6,
+      BlockType.paragraph: Theme.of(context).textTheme.bodyLarge,
+    };
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView.builder(
         itemCount: page.content.length,
         itemBuilder: (context, i) {
           var block = page.content[i];
-          switch (page.content[i].blockType) {
-            case BlockType.headingOne:
-              return Text(block.content,
-                  style: Theme.of(context).textTheme.headline4);
-            case BlockType.headingTwo:
-              return Text(block.content,
-                  style: Theme.of(context).textTheme.headline5);
-            case BlockType.headingThree:
-              return Text(block.content,
-                  style: Theme.of(context).textTheme.headline6);
-            case BlockType.paragraph:
-              return Text(block.content);
-          }
+          return Text(block.content, style: blockStyle[block.blockType]);
         },
       ),
     );
