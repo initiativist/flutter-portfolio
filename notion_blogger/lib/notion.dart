@@ -1,3 +1,5 @@
+library notion;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -6,6 +8,40 @@ class NotionShallowPage {
   String id;
 
   NotionShallowPage(this.id, this.title);
+}
+
+enum BlockType { headingOne, headingTwo, headingThree, paragraph }
+
+Map blockTypeMap = {
+  'heading_1': BlockType.headingOne,
+  'heading_2': BlockType.headingTwo,
+  'heading_3': BlockType.headingThree,
+  'paragraph': BlockType.paragraph,
+};
+
+class NotionBlock {
+  late String id;
+  late BlockType blockType;
+  late String content;
+
+  NotionBlock(Map blockMap) {
+    var apiType = blockMap['type'];
+    if (!blockTypeMap.containsKey(apiType)) throw Error();
+
+    blockType = blockTypeMap[blockMap['type']];
+    var richText = blockMap[apiType]['rich_text'] as List<dynamic>;
+
+    content = richText.isEmpty ? "" : richText[0]['plain_text'];
+    id = blockMap['id'];
+  }
+}
+
+class NotionDeepPage {
+  String id;
+  String title;
+  List<NotionBlock> content;
+
+  NotionDeepPage(this.id, this.title, this.content);
 }
 
 class Notion {
@@ -73,5 +109,26 @@ class Notion {
       shallowPages.add(NotionShallowPage(id, await _getPageTitle(id)));
     }
     this.shallowPages = shallowPages;
+  }
+
+  Future<NotionDeepPage> getPage(NotionShallowPage shallowPage) async {
+    if (!_initialized) throw Error();
+    var cursor = '';
+    var results = [];
+    List<NotionBlock> content = [];
+    Response<dynamic> pageContent;
+
+    do {
+      pageContent = (await _dio.get(
+          '$_notionURL/blocks/${shallowPage.id}/children?page_size=100$cursor',
+          options: Options(headers: _headers)));
+
+      cursor = '&start_cursor=${pageContent.data['next_cursor']}';
+      results.addAll(pageContent.data['results']);
+    } while (pageContent.data['has_more']);
+    for (var element in results) {
+      content.add(NotionBlock(element));
+    }
+    return NotionDeepPage(shallowPage.id, shallowPage.title, content);
   }
 }
