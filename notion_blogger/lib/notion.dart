@@ -1,13 +1,21 @@
 library notion;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class NotionShallowPage {
+class ShallowPagesNotifier extends ChangeNotifier {
+  final List<ShallowPage> _pages;
+  ShallowPagesNotifier(this._pages);
+
+  List<ShallowPage> get pages => List.unmodifiable(_pages);
+}
+
+class ShallowPage {
   String title;
   String id;
 
-  NotionShallowPage(this.id, this.title);
+  ShallowPage(this.id, this.title);
 }
 
 enum BlockType { headingOne, headingTwo, headingThree, paragraph }
@@ -19,12 +27,12 @@ Map blockTypeMap = {
   'paragraph': BlockType.paragraph,
 };
 
-class NotionBlock {
+class Block {
   late String id;
   late BlockType blockType;
   late String content;
 
-  NotionBlock(Map blockMap) {
+  Block(Map blockMap) {
     var apiType = blockMap['type'];
     if (!blockTypeMap.containsKey(apiType)) throw Error();
 
@@ -36,12 +44,12 @@ class NotionBlock {
   }
 }
 
-class NotionDeepPage {
+class DeepPage {
   String id;
   String title;
-  List<NotionBlock> content;
+  List<Block> content;
 
-  NotionDeepPage(this.id, this.title, this.content);
+  DeepPage(this.id, this.title, this.content);
 }
 
 class Notion {
@@ -59,8 +67,6 @@ class Notion {
   late Dio _dio;
   late String _authToken;
   late String _dbId;
-
-  List<NotionShallowPage> shallowPages = [];
 
   Future<bool> init() async {
     _dio = Dio();
@@ -100,22 +106,23 @@ class Notion {
         .data['results'][0]['title']['text']['content'];
   }
 
-  loadShallowPages() async {
-    if (!_initialized) throw Error();
+  Future<List<ShallowPage>> loadShallowPages() async {
+    await init();
 
     var ids = await _getAllPageIds();
-    List<NotionShallowPage> shallowPages = [];
+    List<ShallowPage> shallowPages = [];
     for (var id in ids) {
-      shallowPages.add(NotionShallowPage(id, await _getPageTitle(id)));
+      shallowPages.add(ShallowPage(id, await _getPageTitle(id)));
     }
-    this.shallowPages = shallowPages;
+    return shallowPages;
   }
 
-  Future<NotionDeepPage> getPage(NotionShallowPage shallowPage) async {
-    if (!_initialized) throw Error();
+  Future<DeepPage> getPage(ShallowPage shallowPage) async {
+    await init();
+
     var cursor = '';
     var results = [];
-    List<NotionBlock> content = [];
+    List<Block> content = [];
     Response<dynamic> pageContent;
 
     do {
@@ -127,8 +134,8 @@ class Notion {
       results.addAll(pageContent.data['results']);
     } while (pageContent.data['has_more']);
     for (var element in results) {
-      content.add(NotionBlock(element));
+      content.add(Block(element));
     }
-    return NotionDeepPage(shallowPage.id, shallowPage.title, content);
+    return DeepPage(shallowPage.id, shallowPage.title, content);
   }
 }
